@@ -78,17 +78,24 @@ class TestHttpProxyMiddleware:
             req.headers.get("Proxy-Authorization") == b"Basic dXNlcm5hbWU6cGFzc3dvcmQ="
         )
 
-    def test_proxy_auth_empty_passwd(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("http_proxy", "https://user:@proxy:3128")
+    @pytest.mark.parametrize(
+        ("env_proxy", "meta_proxy"),
+        [
+            ("https://user:@proxy:3128", "https://username:@proxy:3128"),
+            ("https://user@proxy:3128", "https://username@proxy:3128"),
+        ],
+    )
+    def test_proxy_auth_empty_passwd(
+        self, env_proxy: str, meta_proxy: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("http_proxy", env_proxy)
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org")
         assert mw.process_request(req) is None
         assert req.meta["proxy"] == "https://proxy:3128"
         assert req.headers.get("Proxy-Authorization") == b"Basic dXNlcjo="
         # proxy from request.meta
-        req = Request(
-            "http://scrapytest.org", meta={"proxy": "https://username:@proxy:3128"}
-        )
+        req = Request("http://scrapytest.org", meta={"proxy": meta_proxy})
         assert mw.process_request(req) is None
         assert req.meta["proxy"] == "https://proxy:3128"
         assert req.headers.get("Proxy-Authorization") == b"Basic dXNlcm5hbWU6"

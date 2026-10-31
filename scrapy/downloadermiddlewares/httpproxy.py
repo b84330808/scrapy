@@ -48,7 +48,7 @@ class HttpProxyMiddleware:
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, "", "", "", ""))
 
-        creds = self._basic_auth_header(user, password) if user else None
+        creds = self._basic_auth_header(user, password or "") if user else None
 
         return creds, proxy_url
 
